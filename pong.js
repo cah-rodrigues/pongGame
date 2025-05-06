@@ -1,6 +1,12 @@
 ////////////////////////////////////////////////
 // Variáveis =>
 
+let fonteArcade;
+
+//Variaveis do som
+let iconeSomLigado, iconeSomDesligado;
+let somAtivado = true;
+
 // Variável da imagem de fundo
 let imagemFundo;
 
@@ -33,18 +39,32 @@ let pontosJogador = 0;
 let pontosComputador = 0;
 let somGol;
 
+let jogoPausado = false;
+let vencedor = ''; // 'jogador' ou 'computador'
+
+
+
 ////////////////////////////////////////////////
 // Funções =>
 
 function preload() {
-    imagemFundo = loadImage('Sprites/fundo2.png');
+    fonteArcade = loadFont('Sprites/PressStart2P-Regular.ttf');
+    imagemFundo = loadImage('Sprites/night time starry sky background 0611.jpg');
     imagemBola = loadImage('Sprites/bola.png');
     imagemRaqueteJogador = loadImage('Sprites/barra01.png');
     imagemRaqueteComputador = loadImage('Sprites/barra02.png');
     somColisaoBola = loadSound('Sprites/bollSound.wav');
     somRaquetada = loadSound('Sprites/raquetadaSound.wav');
     somGol = loadSound('Sprites/golSound.wav');
+    iconeSomLigado = loadImage('Sprites/sound-on.png');
+    iconeSomDesligado = loadImage('Sprites/sound-off.png');
 }
+
+const botaoSom = {
+    x: larguraTela - 40,
+    y: 10,
+    tamanho: 30
+};
 
 function setup() {
     createCanvas(larguraTela, alturaTela);
@@ -63,32 +83,79 @@ function iniciarJogo() {
 
 function draw() {
     background(imagemFundo);
+
+    if (jogoPausado) {
+        mostrarMensagemFinal();
+        return;
+    }
+
     desenharBarras();
     desenharPlacar();
     desenharBola();
     moverBola();
+    checarFimDeJogo();
     desenharRaquete(jogadorX, raqueteJogadorY, imagemRaqueteJogador);
     desenharRaquete(computadorX, raqueteComputadorY, imagemRaqueteComputador);
     moverRaqueteJogador();
     moverRaqueteComputador();
     verificarColisoes();
+
+    imageMode(CORNER);
+    image(
+        somAtivado ? iconeSomLigado : iconeSomDesligado,
+        botaoSom.x,
+        botaoSom.y,
+        botaoSom.tamanho,
+        botaoSom.tamanho
+    );
+}
+
+function mousePressed() {
+    if (jogoPausado) {
+        pontosJogador = 0;
+        pontosComputador = 0;
+        jogoPausado = false;
+        iniciarJogo();
+        return;
+    }
+
+    if (
+        mouseX >= botaoSom.x &&
+        mouseX <= botaoSom.x + botaoSom.tamanho &&
+        mouseY >= botaoSom.y &&
+        mouseY <= botaoSom.y + botaoSom.tamanho
+    ) {
+        somAtivado = !somAtivado;
+    }
 }
 
 function desenharBarras() {
-    fill("#2B3FD6");
+    fill("#fff");
     rect(0, 0, larguraTela, alturaBarra);
     rect(0, alturaTela - alturaBarra, larguraTela, alturaBarra);
 }
 
-function desenharPlacar(){
-    textAlign(CENTER, TOP);
-    textSize(32);
-    stroke(0);
-    strokeWeight(5);
-    fill(255);
-    text(`Jogador: ${pontosJogador}  -  Computador: ${pontosComputador}`, larguraTela / 2, 20);
-
-}
+function desenharPlacar() {
+    // Fundo do placar
+    let larguraPlacar = 200;
+    let alturaPlacar = 80;
+    let x = width / 2 - larguraPlacar / 2;
+    let y = 20;
+  
+    // Caixa escura com bordas arredondadas
+    fill(0); // preto
+    stroke(100); // borda cinza escura
+    strokeWeight(4);
+    rect(x, y, larguraPlacar, alturaPlacar, 20); // 20px de arredondamento
+  
+    // Texto do placar
+    textFont(fonteArcade);
+    textSize(30);
+    fill(255); // branco
+    noStroke();
+    textAlign(CENTER, CENTER);
+    text(`${pontosJogador} - ${pontosComputador}`, width / 2, y + alturaPlacar / 2);
+  }
 
 function desenharBola() {
     anguloBola += bolaVelX * 0.1;
@@ -104,18 +171,31 @@ function moverBola() {
     bolaX += bolaVelX;
     bolaY += bolaVelY;
 
-    if (bolaY < alturaBarra + bolaRaio || bolaY > alturaTela - alturaBarra - bolaRaio) {
+    // Verifica colisão com a parte superior
+    if (bolaY - bolaRaio <= alturaBarra) {
+        bolaY = alturaBarra + bolaRaio; // reposiciona para evitar bug
         bolaVelY *= -1;
-        somColisaoBola.play();
+        if (somAtivado && somColisaoBola.isLoaded()) somColisaoBola.play();
     }
 
+    // Verifica colisão com a parte inferior
+    if (bolaY + bolaRaio >= alturaTela - alturaBarra) {
+        bolaY = alturaTela - alturaBarra - bolaRaio;
+        bolaVelY *= -1;
+        if (somAtivado && somColisaoBola.isLoaded()) somColisaoBola.play();
+    }
+
+    // Gol do computador
     if (bolaX < 0) {
         pontosComputador++;
-        somGol.play();
+        if (somAtivado && somGol.isLoaded()) somGol.play();
         iniciarJogo();
-    } else if (bolaX > larguraTela){
+    }
+
+    // Gol do jogador
+    if (bolaX > larguraTela) {
         pontosJogador++;
-        somGol.play();
+        if (somAtivado && somGol.isLoaded()) somGol.play();
         iniciarJogo();
     }
 }
@@ -153,12 +233,40 @@ function verificarColisoes() {
 }
 
 function ajustarVelocidadeEBola(fator, raquete) {
-    somColisaoBola.play();
-    somRaquetada.play();
+    if (somAtivado) {
+        if (somColisaoBola.isLoaded()) somColisaoBola.play();
+        if (somRaquetada.isLoaded()) somRaquetada.play();
+      }       
 
     let impacto = (bolaY - (bolaVelX < 0 ? raqueteJogadorY : raqueteComputadorY) - raqueteAltura / 2) / (raqueteAltura / 2);
-    bolaVelY = impacto * 3;
+    bolaVelY = impacto * 2;
     
     bolaVelX = constrain(bolaVelX * fator, -8, 8);
     bolaVelY = constrain(bolaVelY * fator, -8, 8);
 }
+
+function checarFimDeJogo() {
+    if (pontosJogador >= 15) {
+        jogoPausado = true;
+        vencedor = 'jogador';
+    } else if (pontosComputador >= 3) {
+        jogoPausado = true;
+        vencedor = 'computador';
+    }
+}
+
+function mostrarMensagemFinal() {
+    fill(0, 150);
+    rect(0, 0, larguraTela, alturaTela);
+
+    textFont(fonteArcade);
+    textAlign(CENTER, CENTER);
+    textSize(24);
+    fill(255);
+
+    let mensagem = vencedor === 'jogador' ? 'Você Venceu!' : 'Você Perdeu!';
+    text(mensagem, width / 2, height / 2 - 30);
+    textSize(16);
+    text('REINICIAR', width / 2, height / 2 + 20);
+}
+

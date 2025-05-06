@@ -1,0 +1,35 @@
+/* Resetando margens e padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Estilo do body */
+body {
+    margin: 2rem;
+    padding: 0;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+}
+
+canvas {
+    display: block;
+    max-width: 90vw;
+    max-height: 35vh;
+    border-color: #fff;
+}
+
+
+
+@media (min-width: 500px) { 
+
+    canvas {
+        display: block;
+        max-width: 90vw;
+        max-height: 60vh;
+    }
+ }
