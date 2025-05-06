@@ -246,10 +246,10 @@ function ajustarVelocidadeEBola(fator, raquete) {
 }
 
 function checarFimDeJogo() {
-    if (pontosJogador >= 15) {
+    if (pontosJogador >= 10) {
         jogoPausado = true;
         vencedor = 'jogador';
-    } else if (pontosComputador >= 3) {
+    } else if (pontosComputador >= 10) {
         jogoPausado = true;
         vencedor = 'computador';
     }
